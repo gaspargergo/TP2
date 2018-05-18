@@ -1,0 +1,131 @@
+<!doctype HTML>
+<html>
+<head>
+	
+	<style type="text/css">
+		canvas{
+
+		}
+
+		img{
+			visibility: hidden;
+			position: fixed;
+		}
+
+	</style>
+</head>
+<body>
+	
+	<input id="imageUpload" type='file'/>
+	<br><img id="myImg" src="#" height="600px" alt="your image">
+	<button onclick="average()">combine</button>
+
+	<script type="text/javascript">
+		var counter = 0; //number of canvases added
+
+		var upload=document.getElementById("imageUpload");
+		var imgWidth = 0; //for checking if pictures are identical
+
+		var squaresInARow = 30;//the number of sqares it will divide a row of the original pictures to
+
+		upload.onchange= function(){
+	        var img = document.querySelector('img');  // $('img')[0]
+	        img.src = URL.createObjectURL(this.files[0]); // set src to file url
+	        
+	    	var elem = document.createElement('canvas');
+		    elem.id = counter.toString();
+	        document.body.appendChild(elem);
+	        img.onload = imageIsLoaded;
+		}
+
+
+		function imageIsLoaded(e) {
+			var c = document.getElementById(counter.toString());
+			var ctx = c.getContext("2d");
+
+			var img = document.querySelector('img');
+
+			if(imgWidth === 0){
+				imgWidth = img.clientWidth;
+			}
+			c.height = img.clientHeight;
+			c.width = img.clientWidth;
+			ctx.drawImage(img,0,0,c.width,c.height);
+
+			counter++;
+		 }
+
+		function average(){
+			if(Math.sqrt(counter) % 1 != 0){
+				alert("You need a square number of images!");
+			}
+			else{
+				var littleSquare = imgWidth/squaresInARow;
+				var bigSquare = imgWidth/squaresInARow*Math.sqrt(counter);
+
+				var canvases = document.getElementsByTagName("canvas");
+
+				var temp = document.createElement('canvas');
+				temp.id = "temp";
+				temp.height = bigSquare;
+				temp.width = bigSquare;
+				document.body.appendChild(temp);
+
+
+				var elem = document.createElement('canvas');
+				elem.id = "final";
+				elem.width = imgWidth * Math.sqrt(counter);
+				elem.height = 600 * Math.sqrt(counter);
+			    document.body.appendChild(elem);
+
+
+			    var c = document.getElementById("final");
+			    var ctx = c.getContext("2d");
+
+			    var x = 0;
+			    var y = 0;
+			    var finalX = 0;
+			    var finalY = 0;
+
+			    for(var i = 0; i < bigSquare;i++){
+			    	for(var j = 0; j < bigSquare;j++){
+			    		ctx.putImageData(createAverageSquare(x,y,canvases, littleSquare),finalX,finalY);
+			    		x += littleSquare;
+			    		finalX += bigSquare;
+			    	}
+			    	finalX = 0;
+			    	x = 0;
+			    	finalY += bigSquare;
+			    	y += littleSquare;
+			    }
+			}
+		}
+
+	 	function createAverageSquare(x,y,canvases, littleSquare){ //gets coordinates to original picture squares and creates a canvas to assemble the imgData on
+
+	 		var temp = document.getElementById("temp");
+
+	 		ctx = temp.getContext("2d");
+
+	 		var tempX = 0;
+	 		var tempY = 0;
+
+	 		var canvasCounter = 0;
+
+	 		for(var k = 0; k < Math.sqrt(counter);k++){
+			    for(var j = 0; j < Math.sqrt(counter);j++){
+	    			var imgData = canvases[canvasCounter].getContext("2d").getImageData(x,y,littleSquare,littleSquare);
+	    			ctx.putImageData(imgData, tempX, tempY);
+	    			tempX += littleSquare;
+	    			canvasCounter++;
+		    	}
+		    	tempX = 0;
+			    tempY+= littleSquare;
+			}
+
+			return ctx.getImageData(0,0,temp.width,temp.height);
+	 	}
+
+	</script>
+</body>
+</html>
