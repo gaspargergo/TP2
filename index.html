@@ -7,7 +7,7 @@
 
 		}
 
-		img{
+		#myImg{
 			visibility: hidden;
 			position: fixed;
 		}
@@ -15,10 +15,10 @@
 	</style>
 </head>
 <body>
-	
+	<img src="example.jpg" id="example" alt="one of Türk Péter's images"><br>
+	<img id="myImg" src="#" height="400px" alt="your image">
 	<input id="imageUpload" type='file'/>
-	<br><img id="myImg" src="#" height="600px" alt="your image">
-	<button onclick="average()">combine</button>
+	<button onclick="average()">combine</button><br>
 
 	<script type="text/javascript">
 		var counter = 0; //number of canvases added
@@ -26,24 +26,30 @@
 		var upload=document.getElementById("imageUpload");
 		var imgWidth = 0; //for checking if pictures are identical
 
-		var squaresInARow = 30;//the number of sqares it will divide a row of the original pictures to
-
-		upload.onchange= function(){
-	        var img = document.querySelector('img');  // $('img')[0]
+		upload.onchange= function(){//uploading the image and putting it on a canvas
+	        var img = document.getElementById("myImg");  // $('img')[0]
 	        img.src = URL.createObjectURL(this.files[0]); // set src to file url
+
+	        //deleting example image
+	        if(document.getElementById("example")){
+	        	var toDelete = document.getElementById("example");
+	        	toDelete.parentNode.removeChild(toDelete);
+	        }
 	        
+	        //creating canvas and calling to load the image onto it
 	    	var elem = document.createElement('canvas');
 		    elem.id = counter.toString();
+		    elem.classList.add("canvases");
 	        document.body.appendChild(elem);
 	        img.onload = imageIsLoaded;
 		}
 
 
-		function imageIsLoaded(e) {
+		function imageIsLoaded(e) { //drawing the image onto the canvas
 			var c = document.getElementById(counter.toString());
 			var ctx = c.getContext("2d");
 
-			var img = document.querySelector('img');
+			var img = document.getElementById("myImg");
 
 			if(imgWidth === 0){
 				imgWidth = img.clientWidth;
@@ -60,8 +66,13 @@
 				alert("You need a square number of images!");
 			}
 			else{
-				var littleSquare = imgWidth/squaresInARow;
-				var bigSquare = imgWidth/squaresInARow*Math.sqrt(counter);
+				if(document.getElementById("myImg").height < document.getElementById("myImg").width){//using the larger number first
+					var littleSquare = littleSquareSide(document.getElementById("myImg").height,document.getElementById("myImg").width);
+				}
+				else{
+					var littleSquare = littleSquareSide(document.getElementById("myImg").width,document.getElementById("myImg").height);
+				}
+				var bigSquare = littleSquare*Math.sqrt(counter);
 
 				var canvases = document.getElementsByTagName("canvas");
 
@@ -74,8 +85,8 @@
 
 				var elem = document.createElement('canvas');
 				elem.id = "final";
-				elem.width = imgWidth * Math.sqrt(counter);
-				elem.height = 600 * Math.sqrt(counter);
+				elem.width = document.getElementById("myImg").width * Math.sqrt(counter);
+				elem.height = document.getElementById("myImg").height * Math.sqrt(counter);
 			    document.body.appendChild(elem);
 
 
@@ -87,8 +98,8 @@
 			    var finalX = 0;
 			    var finalY = 0;
 
-			    for(var i = 0; i < bigSquare;i++){
-			    	for(var j = 0; j < bigSquare;j++){
+			    for(var i = 0; i < c.height/bigSquare;i++){
+			    	for(var j = 0; j < c.width/bigSquare;j++){
 			    		ctx.putImageData(createAverageSquare(x,y,canvases, littleSquare),finalX,finalY);
 			    		x += littleSquare;
 			    		finalX += bigSquare;
@@ -98,6 +109,14 @@
 			    	finalY += bigSquare;
 			    	y += littleSquare;
 			    }
+
+			    //removing the leftover canvases
+			    var canvasesDel = document.getElementsByClassName("canvases");
+    				while(canvasesDel.length > 0){
+        				canvasesDel[0].parentNode.removeChild(canvasesDel[0]);
+    				}
+    			var tempDel = document.getElementById("temp");
+    			tempDel.parentNode.removeChild(tempDel);
 			}
 		}
 
@@ -126,6 +145,83 @@
 			return ctx.getImageData(0,0,temp.width,temp.height);
 	 	}
 
+	 	function littleSquareSide(a,b){ //calculating the side of the little square
+	 		var factors = factor(a,b);
+	 		var filtered = factors.filter(checkNumber)//filtering out numbers smaller than 10 and bigger than 50
+
+	 		//returning the middle number of remaining factors
+	 		return filtered[Math.floor(filtered.length / 2)];
+	 	}
+
+	 	function checkNumber(value){
+	 		return value >= 10 && value <= 50;
+	 	}
+
+	 	//Complicated stuff, calculating all the common factors of two numbers (stolen from:https://stackoverflow.com/questions/47945714/most-efficient-way-to-find-all-common-factors-of-any-two-numbers)
+
+	 	const gcd = (a, b) => {
+		    const impl = (ai, bi) => ai ? impl(bi % ai, ai) : bi;
+		    // handle also case when a or b is 0 from the beginning
+		    return impl(Math.min(a, b), Math.max(a, b))
+		};
+
+		const factor = (v0) => {
+		    let v = v0;
+		    let factors = [1];
+
+		    const addFactors = (fs) => {
+		        if (fs.length > 0) {
+		            // pre-allocate space
+		            let newFactors = new Array(factors.length * fs.length);
+		            let o = 0;
+		            for (let i = 0; i < factors.length; i++)
+		                newFactors[o++] = factors[i];
+
+		            for (let i = 0; i < factors.length; i++) {
+		                for (let j = 0; j < fs.length; j++) {
+		                    newFactors[o++] = factors[i] * fs[j];
+		                }
+		            }
+		            factors = newFactors;
+		        }
+		    };
+
+		    const addFactorPows = (f) => {
+		        // find all powers of the factor
+		        // Example; v = 12, f = 2
+		        // We want pows to be [2, 4]
+		        // This is important for addFactors to work correctly
+		        let p = 1;
+		        let pows = [];
+
+		        while (v % f === 0) {
+		            v /= f;
+		            p *= f;
+		            pows.push(p);
+		        }
+		        addFactors(pows);
+		        return (pows.length !== 0);
+		    };
+
+			addFactorPows(2);
+
+			let s = Math.floor(Math.sqrt(v));
+			for (let i = 3; i <= s; i += 2) {
+			    if (addFactorPows(i)) {
+			        s = Math.floor(Math.sqrt(v));
+			    }
+			}
+			// probably add the last prime, unless there was a perfect square and v = 1
+			if (v !== 1)
+			    addFactorPows(v);
+
+			return factors.sort((a, b) => (a - b));
+		};
+
+		const commonFactors = (a, b) => {
+		    const g = gcd(a, b);
+		    return factor(g);
+		};
 	</script>
 </body>
 </html>
